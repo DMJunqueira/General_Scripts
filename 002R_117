@@ -1,0 +1,78 @@
+###############################################
+## DOWNLOADING REFERENCE SEQUENCE AND HIS GENOME MAP
+## Author: Sandro Rodrigo Martins Sobrinho
+## AI Disclosure: final refinements of the manuscript were made using Gemini
+## Date: 2026-03-20
+## 
+## DESCRIPTION:
+## This script search for a refseq in NCBI, downloads it's fasta and 
+## generates a .csv containing the sequence genome map
+##
+## USAGE: Python
+###############################################
+
+## installing the libraries
+!pip install pandas biopython
+
+## importing the libraries
+from Bio import Entrez, SeqIO
+import pandas as pd
+import time
+
+## seting your email addres
+Entrez.email = "seu_email@exemplo.com" 
+
+## defining the query for NCBI search, use your refseq accession number
+query = "NC_004718 AND refseq[filter]"
+
+## getting the NCBI search results
+search_handle = Entrez.esearch(db="nucleotide", term=query, retmax=100)
+search_results = Entrez.read(search_handle)
+ids = search_results["IdList"]
+search_handle.close()
+
+print(f"IDs encontrados: {ids}")
+
+# Downloading the .fasta file
+with open("results.fasta", "w") as fasta_out:
+    handle = Entrez.efetch(db="nucleotide", id=ids, rettype="fasta", retmode="text")
+    fasta_out.write(handle.read())
+    handle.close()
+
+print("Arquivo FASTA salvo: results.fasta")
+
+## parsing the sequence CDS data
+cds_data = []
+
+for seq_id in ids:
+    print(f"Baixando GenBank para {seq_id}...")
+    handle = Entrez.efetch(db="nucleotide", id=seq_id, rettype="gb", retmode="text")
+    record = SeqIO.read(handle, "genbank")
+    handle.close()
+
+    accession = record.id
+    organism = record.annotations.get("organism", "")
+    length = len(record.seq)
+
+    for feat in record.features:
+        if feat.type == "CDS":
+            gene = feat.qualifiers.get("gene", [""])[0]
+            product = feat.qualifiers.get("product", [""])[0]
+            start = int(feat.location.start) +1
+            end = int(feat.location.end)
+
+            cds_data.append({
+                "accession": accession,
+                "organism": organism,
+                "genome_length": length,
+                "gene": gene,
+                "product": product,
+                "cds_start": start,
+                "cds_end": end
+            })
+    time.sleep(0.3)
+
+## generating .csv
+df = pd.DataFrame(cds_data)
+df.to_csv("results_CDS.csv", index=False)
+print("Informações de CDS salvas em: results_CDS.csv")
