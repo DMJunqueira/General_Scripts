@@ -10,7 +10,7 @@
 
 
 
-### 002R013_Sequences_CountingNucleotidesGapsAndAmbiguities
+### 002R013_Sequence_CountingNucleotidesGapsAndAmbiguities
 This script identifies the number of the IUPAC nucleotide and ambiguities for each given sequence in a fasta file. Additionally, it counts the number of "-".
 
 ### 002R037_Sequence_RenamingSequencesFasta
