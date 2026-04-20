@@ -10,6 +10,9 @@
 
 
 
+### 002R008_Sequence_ColetandoSequenciasDeArquivoFasta
+This script extracts specific sequences from a FASTA file using one of two modes: based on csv file (1) or on a search-term (2).
+
 ### 002R013_Sequence_CountingNucleotidesGapsAndAmbiguities
 This script identifies the number of the IUPAC nucleotide and ambiguities for each given sequence in a fasta file. Additionally, it counts the number of "-".
 
