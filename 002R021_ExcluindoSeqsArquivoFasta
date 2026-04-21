@@ -1,0 +1,122 @@
+###############################################
+## EXCLUDING SEQUENCES FROM A FASTA FILE
+## Author: Dennis Maletich Junqueira
+## AI Disclosure: final refinements of the script were made using ChatGPT
+## Date: 2026-04-20
+##
+## DESCRIPTION:
+## This script removes sequences from a FASTA file using two possible approaches:
+## (1) "csv"       = removes sequences based on a list of sequence names (CSV file)
+## (2) "duplicate" = removes duplicated sequence headers, keeping only the first occurrence
+##
+## The output is a filtered FASTA file.
+##
+## USAGE: R
+###############################################
+
+# Setting working directory
+setwd("")
+
+# Loading libraries
+suppressPackageStartupMessages({
+  library(seqinr)
+  library(phylotools)
+})
+
+###############################################
+## SPECIFY THE FOLLOWING PARAMETERS ###########
+###############################################
+# Choose the mode: "csv" OR "duplicate"
+# "csv"       = removes sequences based on a table (CSV format)
+# "duplicate" = removes duplicated sequence headers, keeping only the first occurrence
+run_mode <- "csv"
+
+# Input FASTA file
+fasta_file <- "Teste.fasta"
+
+# CSV file containing sequence names to be removed
+# Used only when run_mode = "csv"
+csv_file <- "pegar.csv"
+
+# Output FASTA file
+# The same output file is used regardless of the selected mode
+output_file <- "Alinhamento_filtrado.fasta"
+
+###############################################
+## RUNNING ####################################
+###############################################
+if (run_mode == "csv") {
+  
+  cat("\n>>> Running MODE 01 (REMOVE BY CSV)\n")
+  
+  # Load CSV file (no header expected)
+  list_names <- read.csv(file = csv_file,
+                         header = FALSE,
+                         stringsAsFactors = FALSE)
+  
+  # Convert to vector
+  seq_to_remove <- unlist(list_names, use.names = FALSE)
+  
+  # Remove sequences from FASTA
+  rm.sequence.fasta(infile = fasta_file,
+                    outfile = output_file,
+                    to.rm = seq_to_remove)
+  
+  cat("\n✅ Finished! Output saved in:", output_file, "\n")
+  
+} else if (run_mode == "duplicate") {
+  
+  cat("\n>>> Running MODE 02 (REMOVE DUPLICATES)\n")
+  
+  # 1. Read FASTA file as text
+  linhas <- readLines(fasta_file)
+  
+  # 2. Identify headers
+  idx_hdr <- grep("^>", linhas)
+  
+  # Identify end of each sequence block
+  idx_fim <- c(idx_hdr[-1] - 1, length(linhas))
+  
+  # 3. Extract headers
+  headers <- sub("^>", "", linhas[idx_hdr])
+  
+  # 4. Extract sequences
+  get_seq <- function(i) {
+    ini <- idx_hdr[i] + 1
+    fim <- idx_fim[i]
+    if (ini > fim) return("")
+    paste0(linhas[ini:fim], collapse = "")
+  }
+  
+  seqs <- vapply(seq_along(idx_hdr), get_seq, FUN.VALUE = character(1))
+  
+  # 5. Remove duplicated headers
+  keep <- !duplicated(headers)
+  
+  headers_uniq <- headers[keep]
+  seqs_uniq <- seqs[keep]
+  
+  # Function to wrap sequences into 60 characters per line
+  wrap60 <- function(x, width = 60) {
+    n <- nchar(x)
+    starts <- seq(1, n, by = width)
+    ends <- pmin(starts + width - 1, n)
+    mapply(function(a, b) substr(x, a, b), starts, ends)
+  }
+  
+  # 6. Write output FASTA
+  con <- file(output_file, open = "w")
+  
+  for (i in seq_along(headers_uniq)) {
+    writeLines(paste0(">", headers_uniq[i]), con)
+    writeLines(wrap60(seqs_uniq[i]), con)
+  }
+  
+  close(con)
+  
+  cat("\n✅ Finished! Output saved in:", output_file, "\n")
+  cat("Number of unique sequences:", length(headers_uniq), "\n")
+  
+} else {
+  stop("Invalid run_mode. Use 'csv' or 'duplicate'.")
+}
