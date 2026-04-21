@@ -1,0 +1,96 @@
+###############################################
+## CONVERTING DATES TO CONTINUOUS FORMAT
+## Author: Dennis Maletich Junqueira
+## AI Disclosure: final refinements of the script were made using ChatGPT
+## Date: 2026-04-20
+##
+## DESCRIPTION:
+## This script converts dates from DD/MM/YYYY format into:
+## (1) YYYY/MM/DD format
+## (2) Continuous year format (e.g., 2009.345)
+##
+## Two output formats are available:
+## - "dot"   = decimal with dot (recommended for R and phylogenetics)
+## - "comma" = decimal with comma (recommended for Excel)
+##
+## The output is a CSV file with additional columns.
+##
+## USAGE: R
+###############################################
+
+# Setting working directory
+setwd("")
+
+# Loading libraries
+suppressPackageStartupMessages({
+  library(dplyr)
+})
+
+###############################################
+## SPECIFY THE FOLLOWING PARAMETERS ###########
+###############################################
+# Input CSV file
+input_file <- "dates.csv"
+
+# Output CSV file
+output_file <- "New.csv"
+
+# Column containing dates (DD/MM/YYYY)
+date_column <- "Data"
+
+# Choose output format: "dot" OR "comma"
+output_format <- "dot"
+
+###############################################
+## RUNNING ####################################
+###############################################
+data <- read.csv(input_file,
+                 sep = ";",
+                 stringsAsFactors = FALSE)
+
+# Convert DD/MM/YYYY → Date → YYYY/MM/DD
+data[[date_column]] <- as.Date(data[[date_column]], format = "%d/%m/%Y")
+
+data$Collection_Date_2 <- format(data[[date_column]], "%Y/%m/%d")
+
+# Calculating continuous year
+calculate_continuous_year <- function(date) {
+  year <- as.numeric(format(date, "%Y"))
+  day_of_year <- as.numeric(format(date, "%j"))
+  
+  days_in_year <- ifelse(
+    (year %% 4 == 0 & year %% 100 != 0) | (year %% 400 == 0),
+    366, 365
+  )
+  
+  continuous_year <- year + (day_of_year - 1) / days_in_year
+  
+  return(continuous_year)
+}
+
+# Applying conversion
+continuous_values <- sapply(as.Date(data$Collection_Date_2),
+                            calculate_continuous_year)
+
+# Formatiing output
+if (output_format == "dot") {
+  
+  data$Collection_Date_3 <- round(continuous_values, 4)
+  
+} else if (output_format == "comma") {
+  
+  data$Collection_Date_3 <- gsub("\\.", ",",
+                                 sprintf("%.4f", continuous_values))
+  
+} else {
+  stop("Invalid output_format. Use 'dot' or 'comma'.")
+}
+
+# Checking results
+cat("\nPreview of processed data:\n")
+print(head(data))
+
+# Saving Output
+write.csv(data, file = output_file, row.names = FALSE)
+
+cat("\n✅ Finished! Output saved in:", output_file, "\n")
