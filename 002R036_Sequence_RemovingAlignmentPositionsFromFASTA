@@ -1,0 +1,99 @@
+###############################################
+## REMOVING POSITIONS FROM AN ALIGNED FASTA FILE
+## Author: Dennis Maletich Junqueira
+## AI Disclosure: final refinements of the script were made using ChatGPT
+## Date: 2026-04-21
+##
+## DESCRIPTION:
+## This script removes user-defined alignment positions from all sequences
+## in an aligned FASTA file.
+##
+## It is useful for excluding nucleotide positions associated with drug
+## resistance mutations or any other sites that should be removed from
+## the alignment.
+##
+## IMPORTANT:
+## - The FASTA file must contain an alignment.
+## - All sequences must have the same length.
+## - Positions must refer to alignment columns (1-based indexing).
+##
+## The output is a new FASTA file with the selected positions removed.
+##
+## USAGE: R
+###############################################
+
+# Setting working directory
+setwd("")
+
+# Loading libraries
+suppressPackageStartupMessages({
+  library(Biostrings)
+})
+
+###############################################
+## SPECIFY THE FOLLOWING PARAMETERS ###########
+###############################################
+# Input aligned FASTA file
+input_file <- ""
+
+# Output FASTA file
+output_file <- "alignment_positions_removed.fas"
+
+# Alignment positions to remove (1-based)
+# Example: remove columns 10, 11, 12, 55, 56, 57
+positions_to_remove <- c(10, 11, 12, 55, 56, 57)
+
+###############################################
+## RUNNING ####################################
+###############################################
+alignment <- readDNAStringSet(input_file, format = "fasta")
+
+# Extract sequence names
+seq_names <- names(alignment)
+
+# Convert sequences to character
+seqs <- as.character(alignment)
+
+# Check if all sequences have the same length
+seq_lengths <- nchar(seqs)
+if (length(unique(seq_lengths)) != 1) {
+  stop("Input FASTA does not appear to be an alignment: sequences have different lengths.")
+}
+alignment_length <- unique(seq_lengths)
+cat("\nAlignment length:", alignment_length, "\n")
+cat("Number of sequences:", length(seqs), "\n")
+
+# Check if positions are valid
+if (any(positions_to_remove < 1) || any(positions_to_remove > alignment_length)) {
+  stop("Some positions in 'positions_to_remove' are outside the alignment length.")
+}
+
+# Remove duplicates and sort positions
+positions_to_remove <- sort(unique(positions_to_remove))
+
+cat("Number of positions to remove:", length(positions_to_remove), "\n")
+
+# Positions to keep
+positions_to_keep <- setdiff(seq_len(alignment_length), positions_to_remove)
+
+# Function to remove selected columns
+remove_positions <- function(sequence, keep_positions) {
+  chars <- strsplit(sequence, split = "")[[1]]
+  paste(chars[keep_positions], collapse = "")
+}
+
+filtered_seqs <- vapply(
+  seqs,
+  remove_positions,
+  keep_positions = positions_to_keep,
+  FUN.VALUE = character(1)
+)
+
+# Saving output
+filtered_alignment <- DNAStringSet(filtered_seqs)
+names(filtered_alignment) <- seq_names
+
+writeXStringSet(filtered_alignment, filepath = output_file, format = "fasta")
+
+cat("\n✅ Finished! Output saved in:", output_file, "\n")
+cat("New alignment length:", nchar(filtered_seqs[1]), "\n")
