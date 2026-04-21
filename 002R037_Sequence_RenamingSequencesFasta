@@ -1,0 +1,98 @@
+###############################################
+## RENAMING SEQUENCES IN A FASTA FILE
+## Author: Dennis Maletich Junqueira
+## AI Disclosure: final refinements of the script were made using ChatGPT
+## Date: 2026-04-20
+##
+## DESCRIPTION:
+## This script renames sequences in a FASTA file based on a mapping table
+## provided in CSV format.
+##
+## The CSV file must contain:
+## - First column: original sequence names
+## - Second column: new sequence names
+##
+## The output is a new FASTA file with updated sequence names.
+##
+## USAGE: R
+###############################################
+# Setting working directory
+setwd("")
+
+# Loading libraries
+suppressPackageStartupMessages({
+  library(seqinr)
+})
+
+###############################################
+## SPECIFY THE FOLLOWING PARAMETERS ###########
+###############################################
+
+# Input FASTA file
+input_file <- "Teste.fasta"
+
+# CSV file containing name mapping
+mapping_file <- "Pasta1.csv"
+
+# Output FASTA file
+output_file <- "teste2.fasta"
+
+###############################################
+## RUNNING ####################################
+###############################################
+# Load FASTA
+fasta <- read.fasta(file = input_file)
+
+# Load mapping table
+mapping_table <- read.csv(file = mapping_file,
+                          header = TRUE,
+                          sep = ";",
+                          stringsAsFactors = FALSE)
+
+# Remove extra spaces
+mapping_table[, 1] <- trimws(mapping_table[, 1])
+mapping_table[, 2] <- trimws(mapping_table[, 2])
+
+###############################################
+## CHECKING INPUT DATA ########################
+###############################################
+
+# Original FASTA names
+fasta_names <- names(fasta)
+
+# Original names from CSV
+old_names <- mapping_table[, 1]
+
+# New names from CSV
+new_names <- mapping_table[, 2]
+
+cat("\nNames in CSV found in FASTA:\n")
+print(intersect(old_names, fasta_names))
+
+cat("\nNames in CSV not found in FASTA:\n")
+print(setdiff(old_names, fasta_names))
+
+###############################################
+## RENAMING SEQUENCES #########################
+###############################################
+
+# Match FASTA names to the first column of the mapping table
+idx <- match(fasta_names, old_names)
+
+# Replace only the names that were found in the mapping table
+new_fasta_names <- fasta_names
+new_fasta_names[!is.na(idx)] <- new_names[idx[!is.na(idx)]]
+
+# Assign new names
+names(fasta) <- new_fasta_names
+
+###############################################
+## SAVING OUTPUT ##############################
+###############################################
+
+write.fasta(sequences = fasta,
+            names = names(fasta),
+            file.out = output_file)
+
+cat("\n✅ Finished! Output saved in:", output_file, "\n")
+cat("Number of renamed sequences:", sum(!is.na(idx)), "\n")
