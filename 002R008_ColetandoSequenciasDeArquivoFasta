@@ -23,7 +23,7 @@ suppressPackageStartupMessages({
 })
 
 ###############################################
-## SPECIFY THE FOLLOWING PARAMENTERS ##########
+## SPECIFY THE FOLLOWING PARAMETERS ##########
 ###############################################
 # Choose the input FASTA file
 fasta_file <- "Teste.fasta"
