@@ -1,0 +1,70 @@
+###############################################
+## ADDING GEOGRAPHIC REGION TO METADATA TABLE
+## Author: Dennis Maletich Junqueira
+## AI Disclosure: final refinements of the script were made using ChatGPT
+## Date: 2026-04-20
+##
+## DESCRIPTION:
+## This script adds a new column with geographic classification (e.g., region,
+## continent) to a metadata table based on country names.
+##
+## It uses the countrycode package to convert country names into standardized
+## geographic regions.
+##
+## The output is a new CSV file with the additional column.
+##
+## USAGE: R
+###############################################
+# Setting working directory
+setwd("")
+
+# Loading libraries
+suppressPackageStartupMessages({
+  library(countrycode)
+})
+
+###############################################
+## SPECIFY THE FOLLOWING PARAMETERS ###########
+###############################################
+# Input CSV file
+input_file <- "Gen11_metadados.csv"
+
+# Output CSV file
+output_file <- "Gen11_metadados_com_regiao.csv"
+
+# Column containing country names
+country_column <- "Country"
+
+# Name of the new column to be created
+new_column <- "Region"
+
+# Classification type:
+# Examples:
+# "region"     = UN regions (e.g., Americas, Europe)
+# "continent"  = continents
+# "unregion"   = UN macro regions
+destination_type <- "region"
+
+###############################################
+## RUNNING ####################################
+###############################################
+dados <- read.csv(input_file,
+                  sep = ";",
+                  header = TRUE,
+                  stringsAsFactors = FALSE)
+
+dados[[new_column]] <- countrycode(
+  sourcevar = dados[[country_column]],
+  origin = "country.name",
+  destination = destination_type
+)
+
+cat("\nPreview of updated data:\n")
+print(head(dados))
+
+cat("\nUnique values in new column:\n")
+print(unique(dados[[new_column]]))
+
+write.csv(dados, file = output_file, row.names = FALSE)
+
+cat("\n✅ Finished! Output saved in:", output_file, "\n")
