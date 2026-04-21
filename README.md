@@ -22,6 +22,9 @@ This script identifies and removes duplicate sequences from a FASTA file.
 ### 002R021_Sequence_ExcluindoSequenciasArquivoFasta
 This script removes sequences from a FASTA file using two possible approaches: based on csv file (1) or by duplicated sequence headers.
 
+### 002R036_Sequence_RemovingAlignmentPositionsFromFASTA
+This script removes user-defined alignment positions from all sequences in an aligned FASTA file.
+
 ### 002R037_Sequence_RenamingSequencesFasta
 This script renames sequences in a FASTA file based on a provided mapping table in a CSV format.
 
