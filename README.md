@@ -16,6 +16,9 @@ This script extracts specific sequences from a FASTA file using one of two modes
 ### 002R013_Sequence_CountingNucleotidesGapsAmbiguities
 This script identifies the number of the IUPAC nucleotide and ambiguities for each given sequence in a fasta file. Additionally, it counts the number of "-".
 
+### 002R018_Sequence_DeletingDuplicateSequences.R
+This script identifies and removes duplicate sequences from a FASTA file.
+
 ### 002R021_Sequence_ExcluindoSequenciasArquivoFasta
 This script removes sequences from a FASTA file using two possible approaches: based on csv file (1) or by duplicated sequence headers.
 
