@@ -7,12 +7,12 @@
 ## DESCRIPTION:
 ## This script identifies and removes duplicate sequences from a FASTA file.
 ##
-## First, it generates an Excel table summarizing sequence redundancy and
-## duplicate classification. Then, it removes duplicate sequences and saves
-## a filtered FASTA file.
+## It generates an Excel report WITHOUT the full sequences, including:
+## - sequence length
+## - number of ambiguous bases (N)
+## - number of gaps (-)
 ##
-## The Excel output includes a second sheet with a legend explaining the
-## meaning of each output column and duplicate class.
+## Then it outputs a FASTA file with duplicates removed.
 ##
 ## USAGE: R
 ###############################################
@@ -43,20 +43,21 @@ output_fasta <- "DuplicatesRemoved.fasta"
 ## RUNNING ####################################
 ###############################################
 fastaFile <- readDNAStringSet(input_fasta)
-
-seq_name <- names(fastaFile)
-sequence <- paste(fastaFile)
-
 df <- data.frame(
-  seq_name = seq_name,
-  sequence = sequence,
+  seq_name = names(fastaFile),
+  sequence = as.character(fastaFile),
   stringsAsFactors = FALSE
 )
 
-# Remove exact duplicate sequence names before analysis
-df <- df[!duplicated(df$seq_name), ]
+# Adding QC metrics
+df <- df %>%
+  mutate(
+    Sequence_Length = nchar(sequence),
+    N_Count = stringr::str_count(sequence, "N"),
+    Gap_Count = stringr::str_count(sequence, "-")
+  )
 
-# Generate duplicate summary table without collapsing sequences yet
+# Duplicate report
 dup_report <- collapseDuplicates(
   df,
   id = "seq_name",
@@ -68,71 +69,60 @@ dup_report <- collapseDuplicates(
   dry = TRUE
 )
 
-# Improving output table
+# Cleaning output table
 dup_report_pretty <- dup_report %>%
+  select(
+    seq_name,
+    Sequence_Length,
+    N_Count,
+    Gap_Count,
+    collapse_count,
+    collapse_id,
+    collapse_class,
+    collapse_pass
+  ) %>%
   rename(
     Sequence_Name = seq_name,
-    Sequence = sequence,
     Duplicate_Count = collapse_count,
     Collapse_Group_ID = collapse_id,
     Duplicate_Class = collapse_class,
     Representative_Sequence = collapse_pass
   )
 
-# Creating legend table
+# Legend
 legend_table <- data.frame(
   Field = c(
     "Sequence_Name",
-    "Sequence",
+    "Sequence_Length",
+    "N_Count",
+    "Gap_Count",
     "Duplicate_Count",
     "Collapse_Group_ID",
     "Duplicate_Class",
     "Representative_Sequence"
   ),
   Meaning = c(
-    "Original sequence header from the FASTA file.",
-    "Nucleotide sequence associated with the header.",
-    "Number of sequences grouped together in the same duplicate cluster.",
-    "Identifier of the duplicate cluster created by collapseDuplicates(). Sequences sharing the same ID belong to the same redundancy group.",
-    "Classification assigned by collapseDuplicates() describing the relationship among redundant sequences.",
-    "TRUE = sequence kept as the representative of the group; FALSE = sequence excluded during duplicate collapsing."
+    "Original sequence header.",
+    "Length of the nucleotide sequence.",
+    "Number of ambiguous bases (N).",
+    "Number of gaps (-).",
+    "Number of sequences in the duplicate group.",
+    "Identifier of the duplicate cluster.",
+    "Classification of the sequence.",
+    "TRUE = kept; FALSE = removed."
   ),
   stringsAsFactors = FALSE
 )
 
-class_table <- data.frame(
-  Duplicate_Class = c(
-    "UNIQUE",
-    "DUPLICATE",
-    "AMBIGUOUS",
-    "AMBIGUOUS_DUPLICATE"
-  ),
-  Meaning = c(
-    "Sequence is unique and does not collapse with any other sequence.",
-    "Sequence is duplicated and is not kept as the representative sequence.",
-    "Sequence is equally compatible with more than one group, often because it is shorter or less informative.",
-    "Sequence is ambiguous and also duplicated relative to another equally ambiguous sequence."
-  ),
-  stringsAsFactors = FALSE
-)
-
-# Saving duplicate report to excel
+# Saving excel
 wb <- createWorkbook()
 addWorksheet(wb, "Duplicate_Report")
-writeData(wb, sheet = "Duplicate_Report", x = dup_report_pretty)
+writeData(wb, "Duplicate_Report", dup_report_pretty)
 addWorksheet(wb, "Legend")
-writeData(wb, sheet = "Legend", x = legend_table, startRow = 1)
-writeData(wb, sheet = "Legend", x = class_table, startRow = nrow(legend_table) + 4)
-saveWorkbook(wb, file = output_excel, overwrite = TRUE)
+writeData(wb, "Legend", legend_table)
+saveWorkbook(wb, output_excel, overwrite = TRUE)
 
-
-# IF YOU ONLY WANT TO IDENTIFY THE DUPLICATES THE SCRIPT FINISHES HERE
-# IF YOU WANT TO EXCLUDE DUPLICATED SEQUENCES FROM A FASTA THE FILE THE SCRIPT CONTINUES BELOW
-
-
-
-
-# Removing duplicate sequences
+# Removing
 data_collapsed <- collapseDuplicates(
   df,
   id = "seq_name",
@@ -142,21 +132,21 @@ data_collapsed <- collapseDuplicates(
   add_count = TRUE
 )
 
-# WRITING FASTA
-writeFasta <- function(data, filename) {
-  fastaLines <- c()
-  
-  for (rowNum in 1:nrow(data)) {
-    fastaLines <- c(fastaLines, paste0(">", data[rowNum, "seq_name"]))
-    fastaLines <- c(fastaLines, data[rowNum, "sequence"])
+# Writing fasta
+writeFasta <- function(data, filename){
+  fastaLines = c()
+ 
+  for (i in 1:nrow(data)){
+    fastaLines = c(fastaLines, paste0(">", data$seq_name[i]))
+    fastaLines = c(fastaLines, data$sequence[i])
   }
   
-  writeLines(fastaLines, con = filename)
+  writeLines(fastaLines, filename)
 }
 
 writeFasta(data_collapsed, output_fasta)
 
 cat("\n✅ Finished!\n")
-cat("Excel report saved in:", output_excel, "\n")
-cat("Filtered FASTA saved in:", output_fasta, "\n")
-cat("Number of sequences after duplicate removal:", nrow(data_collapsed), "\n")
+cat("Excel report:", output_excel, "\n")
+cat("Filtered FASTA:", output_fasta, "\n")
+cat("Final number of sequences:", nrow(data_collapsed), "\n")
