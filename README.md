@@ -10,11 +10,14 @@
 
 
 
-### 002R008_Sequence_ColetandoSequenciasDeArquivoFasta
+### 002R008_Sequence_ColetandoSequenciasArquivoFasta
 This script extracts specific sequences from a FASTA file using one of two modes: based on csv file (1) or on a search-term (2).
 
-### 002R013_Sequence_CountingNucleotidesGapsAndAmbiguities
+### 002R013_Sequence_CountingNucleotidesGapsAmbiguities
 This script identifies the number of the IUPAC nucleotide and ambiguities for each given sequence in a fasta file. Additionally, it counts the number of "-".
+
+### 002R021_Sequence_ExcluindoSequenciasArquivoFasta
+This script removes sequences from a FASTA file using two possible approaches: based on csv file (1) or by duplicated sequence headers.
 
 ### 002R037_Sequence_RenamingSequencesFasta
 This script renames sequences in a FASTA file based on a provided mapping table in a CSV format.
