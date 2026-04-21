@@ -22,7 +22,7 @@ This script removes sequences from a FASTA file using two possible approaches: b
 ### 002R037_Sequence_RenamingSequencesFasta
 This script renames sequences in a FASTA file based on a provided mapping table in a CSV format.
 
-### 002R068_Metadata_IdentificandoPaises
+### 002R068_Metadata_IdentifyingGeoRegions
 This script adds a new column with geographic classification to a metadata table based on country names.
 
 ### 002R094_Metadata_ConvertingDates
