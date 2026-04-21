@@ -1,0 +1,86 @@
+###############################################
+## GEOCODING METADATA LOCATIONS
+## Author: Dennis Maletich Junqueira
+## AI Disclosure: final refinements of the script were made using ChatGPT
+## Date: 2026-04-20
+##
+## DESCRIPTION:
+## This script geocodes locations from a metadata table and adds latitude
+## and longitude coordinates based on location information.
+##
+## It uses the tidygeocoder package and the OpenStreetMap Nominatim service
+## to retrieve geographic coordinates.
+##
+## The output is a CSV file containing the geocoded results.
+##
+## USAGE: R
+###############################################
+# Setting working directory
+setwd("")
+
+# Loading libraries
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(tidygeocoder)
+})
+
+###############################################
+## SPECIFY THE FOLLOWING PARAMETERS ###########
+###############################################
+# Input metadata file
+input_file <- "metadados.csv"
+
+# Output file
+output_file <- "Results_with_Coords.csv"
+
+# Column containing detailed geographic location
+location_column <- "Geo_Location"
+
+# Column containing country name
+country_column <- "Country"
+
+# Name of the temporary full address column
+address_column <- "full_address"
+
+# Output coordinate column names
+latitude_column <- "latitude"
+longitude_column <- "longitude"
+
+# Geocoding method
+# Options include "osm", "google", and others supported by tidygeocoder
+geocode_method <- "osm"
+
+###############################################
+## RUNNING ####################################
+###############################################
+metadata <- read.csv2(input_file, stringsAsFactors = FALSE)
+
+# Preparing data for geocoding
+metadata_to_geocode <- metadata %>%
+  mutate(
+    full_address = paste(.data[[location_column]], .data[[country_column]], sep = ", ")
+  ) %>%
+  distinct(.data[[address_column]], .keep_all = TRUE)
+
+## Running geocoding
+geocoded_results <- metadata_to_geocode %>%
+  geocode(address = full_address,
+          method = geocode_method,
+          lat = latitude,
+          long = longitude)
+
+# Checking the results
+cat("\nPreview of geocoded results:\n")
+print(head(geocoded_results))
+
+cat("\nNumber of rows with missing coordinates:\n")
+print(sum(is.na(geocoded_results[[latitude_column]]) | is.na(geocoded_results[[longitude_column]])))
+
+# Saving output
+write.table(geocoded_results,
+            file = output_file,
+            row.names = FALSE,
+            sep = ",",
+            dec = ".")
+
+cat("\n✅ Finished! Output saved in:", output_file, "\n")
